@@ -3,7 +3,7 @@ package catalog
 import (
 	"context"
 
-	"github.com/OmShirke/gRPC-Microservices/catalog/pb"
+	"github.com/OmShirke/gRPC-Microservice-Catalog/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
