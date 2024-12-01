@@ -5,7 +5,7 @@ FROM golang:1.23-alpine AS build
 RUN apk --no-cache add gcc g++ make ca-certificates
 
 # Set the working directory
-WORKDIR /go/src/github.com/OmShirke/gRPC-Microservices
+WORKDIR /go/src/github.com/OmShirke/gRPC-Microservice-Catalog
 
 # Copy dependency management files
 COPY go.mod go.sum ./
