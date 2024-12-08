@@ -47,15 +47,15 @@ func (r *elasticRepo) Close() {
 }
 
 func (r *elasticRepo) PutProduct(ctx context.Context, p Product) error {
-	_, err := r.client.Index().
-		Index("catalog").
-		Type("product").
-		Id(p.ID).
-		BodyJson(productDocument{
+	_, err := r.client.Index(). //Initiates an indexing operation in Elasticsearch using the client provided by the elastic library
+					Index("catalog").         //specifies the name of the Elasticsearch index where the product will be stored.
+					Type("product").          //Sets the document type within the index.
+					Id(p.ID).                 //Sets the unique identifier (ID) for the document.
+					BodyJson(productDocument{ //Specifies the document to be indexed in the Elasticsearch database.
 			Name:        p.Name,
 			Description: p.Description,
 			Price:       p.Price,
-		}).Do(ctx)
+		}).Do(ctx) //Executes the indexing operation within the given context
 	return err
 }
 
@@ -68,7 +68,7 @@ func (r *elasticRepo) GetProductByID(ctx context.Context, id string) (*Product, 
 		return nil, ErrNotFound
 	}
 	p := productDocument{}
-	if err = json.Unmarshal(*res.Source, &p); err != nil {
+	if err = json.Unmarshal(*res.Source, &p); err != nil { //Deserializes the JSON source into a productDocument struct
 		return nil, err
 	}
 	return &Product{
@@ -80,20 +80,20 @@ func (r *elasticRepo) GetProductByID(ctx context.Context, id string) (*Product, 
 }
 
 func (r *elasticRepo) ListProducts(ctx context.Context, skip, take uint64) ([]Product, error) {
-	res, err := r.client.Search().
-		Index("catalog").
-		Type("product").
-		Query(elastic.NewMatchAllQuery()).
-		From(int(skip)).Size(int(take)).
-		Do(ctx)
+	res, err := r.client.Search(). //Starts a search operation in Elasticsearch
+					Index("catalog").                  //Specifies the index (catalog) where the documents (products) reside
+					Type("product").                   //Specifies the type of document (product)
+					Query(elastic.NewMatchAllQuery()). //Uses the MatchAllQuery to retrieve all documents from the catalog index
+					From(int(skip)).Size(int(take)).
+					Do(ctx)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 	products := []Product{}
-	for _, hit := range res.Hits.Hits {
-		p := productDocument{}
-		if err = json.Unmarshal(*hit.Source, &p); err == nil {
+	for _, hit := range res.Hits.Hits { //The Hits field in res contains the list of documents that matched the query
+		p := productDocument{}                                 //Hits is an array where each element is a hit representing a document
+		if err = json.Unmarshal(*hit.Source, &p); err == nil { //json.Unmarshal deserializes this JSON into a productDocument struct p
 			products = append(products, Product{
 				ID:          hit.Id,
 				Name:        p.Name,
@@ -110,15 +110,15 @@ func (r *elasticRepo) ListProductsWithIDs(ctx context.Context, ids []string) ([]
 	for _, id := range ids {
 		items = append(
 			items,
-			elastic.NewMultiGetItem().
-				Index("catalog").
-				Type("product").
-				Id(id),
+			elastic.NewMultiGetItem(). //For each id, a new MultiGetItem is created using elastic.NewMultiGetItem()
+							Index("catalog").
+							Type("product").
+							Id(id), //Each id is added to the MultiGetItem
 		)
 	}
-	res, err := r.client.MultiGet().
-		Add(items...).
-		Do(ctx)
+	res, err := r.client.MultiGet(). //The MultiGet API is used to retrieve multiple documents in a single request
+						Add(items...). //Adds the items slice to the MultiGet request. Each item represents a product ID to retrieve.
+						Do(ctx)        //Executes the MultiGet request asynchronously, using the provided ctx context
 	if err != nil {
 		log.Println(err)
 		return nil, err
